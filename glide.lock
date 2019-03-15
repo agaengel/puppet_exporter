@@ -1,5 +1,5 @@
-hash: 157de372e8af2b5e2f44874c0698ed6f05ac4e3f2ebba4c76974c44860cdbbb9
-updated: 2017-07-20T09:42:34.753254872+02:00
+hash: 6c2b8f1035823fe6d33b93e38561b75a669a794f8edc142c9e5f3b0735a1ea5d
+updated: 2019-03-15T11:49:01.60923+01:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -14,9 +14,10 @@ imports:
   subpackages:
   - pbutil
 - name: github.com/prometheus/client_golang
-  version: c5b7fccd204277076155f10851dad72b76a49317
+  version: 505eaef017263e299324067d40ca2c48f6a2cf50
   subpackages:
   - prometheus
+  - prometheus/internal
   - prometheus/promhttp
 - name: github.com/prometheus/client_model
   version: 6f3806018612930941127f2a7c6c453ba2c527d2
@@ -55,6 +56,6 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  version: ffdc059bfe9ce6a4e144ba849dbedead332c6053
   subpackages:
   - assert
