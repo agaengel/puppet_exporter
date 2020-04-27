@@ -17,6 +17,7 @@ package main
 import (
 	"flag"
 	"net/http"
+	"path"
 
 	"fmt"
 	"io/ioutil"
@@ -49,6 +50,7 @@ var (
 	eventsFailure             = prometheus.NewDesc(prometheus.BuildFQName(namespace, "events", "failure"), "Events failure", []string{"puppet_version"}, nil)
 	eventsSuccess             = prometheus.NewDesc(prometheus.BuildFQName(namespace, "events", "success"), "Events success", []string{"puppet_version"}, nil)
 	eventsTotal               = prometheus.NewDesc(prometheus.BuildFQName(namespace, "events", "total"), "Events total", []string{"puppet_version"}, nil)
+	lastRun                   = prometheus.NewDesc(prometheus.BuildFQName(namespace, "", "last_run"), "Last run unix timestamp", []string{"puppet_version"}, nil)
 
 	times = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "times"),
@@ -58,7 +60,8 @@ var (
 )
 
 type exporter struct {
-	puppetLastReportPath string
+	puppetLastRunSummaryPath string
+	puppetLastRunReportPath  string
 }
 
 // Describe all the metrics exported by Puppet exporter. It implements prometheus.Collector.
@@ -77,6 +80,7 @@ func (v *exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- eventsFailure
 	ch <- eventsSuccess
 	ch <- eventsTotal
+	ch <- lastRun
 	ch <- times
 }
 
@@ -84,12 +88,17 @@ func (v *exporter) Describe(ch chan<- *prometheus.Desc) {
 func (v *exporter) Collect(ch chan<- prometheus.Metric) {
 
 	// Collect metrics from volume info
-	yamlFile, err := ioutil.ReadFile(v.puppetLastReportPath)
+	summaryFile, err := ioutil.ReadFile(v.puppetLastRunSummaryPath)
+	if err != nil {
+		log.Infof("yamlFile.Get err   #%v ", err)
+	}
+	reportFile, err := ioutil.ReadFile(v.puppetLastRunReportPath)
 	if err != nil {
 		log.Infof("yamlFile.Get err   #%v ", err)
 	}
 
-	puppetValues, err := structs.Unmarshall(yamlFile)
+	puppetValues, err := structs.UnmarshallSummary(summaryFile)
+	report, err := structs.UnmarshallReport(reportFile)
 
 	ch <- prometheus.MustNewConstMetric(
 		versionConfig,
@@ -175,6 +184,12 @@ func (v *exporter) Collect(ch chan<- prometheus.Metric) {
 		puppetValues.Version.Puppet,
 	)
 
+	ch <- prometheus.MustNewConstMetric(
+		lastRun,
+		prometheus.GaugeValue,
+		float64(report.Time.Unix()),
+		puppetValues.Version.Puppet)
+
 	for resource, time := range puppetValues.Time {
 		ch <- prometheus.MustNewConstMetric(
 			times,
@@ -187,16 +202,23 @@ func (v *exporter) Collect(ch chan<- prometheus.Metric) {
 }
 
 //newExporter initialises exporter
-func newExporter(puppetLastReportPath string) (*exporter, error) {
-	if len(puppetLastReportPath) < 1 {
-		log.Fatalf("Puppet last Report path is wrong: %v", puppetLastReportPath)
+func newExporter(puppetStateDir string) (*exporter, error) {
+	if len(puppetStateDir) < 1 {
+		log.Fatalf("Puppet state dir path is wrong: %v", puppetStateDir)
 	}
-	_, err := os.Open(puppetLastReportPath) // For read access.
+	puppetLastRunSummaryPath := path.Join(puppetStateDir, "last_run_summary.yaml")
+	puppetLastRunReportPath := path.Join(puppetStateDir, "last_run_report.yaml")
+	_, err := os.Open(puppetLastRunSummaryPath) // For read access.
 	if err != nil {
-		log.Fatalf("Unable able to open file %v -- Message from os.Open: %v", puppetLastReportPath, err)
+		log.Fatalf("Unable able to open file %v -- Message from os.Open: %v", puppetLastRunSummaryPath, err)
+	}
+	_, err = os.Open(puppetLastRunReportPath) // For read access.
+	if err != nil {
+		log.Fatalf("Unable able to open file %v -- Message from os.Open: %v", puppetLastRunReportPath, err)
 	}
 	return &exporter{
-		puppetLastReportPath: puppetLastReportPath,
+		puppetLastRunSummaryPath: puppetLastRunSummaryPath,
+		puppetLastRunReportPath:  puppetLastRunReportPath,
 	}, nil
 }
 
@@ -212,10 +234,10 @@ func versionInfo() {
 func main() {
 	// commandline arguments
 	var (
-		metricPath           = flag.String("metrics-path", "/metrics", "URL Endpoint for metrics")
-		puppetLastReportPath = flag.String("puppetLastReportPath", "/var/opt/puppetlabs/puppet/cache/state/last_run_summary.yaml", "Path to the last_run_summary.yaml")
-		showVersion          = flag.Bool("version", false, "Prints version information")
-		listenAddress        = flag.String("listen-address", ":9199", "The address to listen on for HTTP requests.")
+		metricPath     = flag.String("metrics-path", "/metrics", "URL Endpoint for metrics")
+		puppetStateDir = flag.String("puppetStateDir", "/opt/puppetlabs/puppet/cache/state/", "Path to the puppet state dir")
+		showVersion    = flag.Bool("version", false, "Prints version information")
+		listenAddress  = flag.String("listen-address", ":9199", "The address to listen on for HTTP requests.")
 	)
 	flag.Parse()
 
@@ -223,7 +245,7 @@ func main() {
 		versionInfo()
 	}
 
-	exporter, err := newExporter(*puppetLastReportPath)
+	exporter, err := newExporter(*puppetStateDir)
 	if err != nil {
 		log.Errorf("Creating new Exporter went wrong, ... \n%v", err)
 	}

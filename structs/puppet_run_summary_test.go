@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestUnmarshall(t *testing.T) {
+func TestUnmarshallSummary(t *testing.T) {
 	assert := assert.New(t)
 	testyamlPath := "../test/last_run_summary.yaml"
 	data, err := ioutil.ReadFile(testyamlPath)
@@ -15,7 +15,7 @@ func TestUnmarshall(t *testing.T) {
 		t.Errorf("error reading testxml in Path: %v", testyamlPath)
 	}
 
-	parsedYaml, err := Unmarshall(data)
+	parsedYaml, err := UnmarshallSummary(data)
 	if err != nil {
 		t.Errorf("Parsing Error: %v", testyamlPath)
 	}
@@ -36,5 +36,5 @@ func TestUnmarshall(t *testing.T) {
 
 	assert.Equal(parsedYaml.Resources, expect.Resources)
 
-	t.Log("Parsing of last_run_summary sucessfull")
+	t.Log("Parsing of last_run_summary successful")
 }

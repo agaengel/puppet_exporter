@@ -45,8 +45,8 @@ type Events struct {
 	Total   int32 `yaml:"total"`
 }
 
-//Unmarshall yamlfile
-func Unmarshall(yamlInput []byte) (PuppetValues, error) {
+//UnmarshallSummary yamlfile
+func UnmarshallSummary(yamlInput []byte) (PuppetValues, error) {
 	puppetValues := PuppetValues{}
 
 	err := yaml.Unmarshal(yamlInput, &puppetValues)
