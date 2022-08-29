@@ -6,12 +6,12 @@ import (
 	"time"
 )
 
-//Report yaml root
+// Report yaml root
 type Report struct {
 	Time time.Time `yaml:"time"`
 }
 
-//UnmarshallReport yamlfile
+// UnmarshallReport yamlfile
 func UnmarshallReport(yamlInput []byte) (Report, error) {
 	report := Report{}
 

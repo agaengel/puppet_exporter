@@ -201,7 +201,7 @@ func (v *exporter) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-//newExporter initialises exporter
+// newExporter initialises exporter
 func newExporter(puppetStateDir string) (*exporter, error) {
 	if len(puppetStateDir) < 1 {
 		log.Fatalf("Puppet state dir path is wrong: %v", puppetStateDir)

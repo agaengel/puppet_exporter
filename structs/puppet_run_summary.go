@@ -5,7 +5,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-//PuppetValues yaml root
+// PuppetValues yaml root
 type PuppetValues struct {
 	Version   Version            `yaml:"version"`
 	Resources Resources          `yaml:"resources"`
@@ -14,13 +14,13 @@ type PuppetValues struct {
 	Events    Events             `yaml:events`
 }
 
-//Version in yaml
+// Version in yaml
 type Version struct {
 	Config int32  `yaml:"config"`
 	Puppet string `yaml:"puppet"`
 }
 
-//Resources in yaml
+// Resources in yaml
 type Resources struct {
 	Changed          int32 `yaml:"changed"`
 	CorrectiveChange int32 `yaml:"corrective_change"`
@@ -33,19 +33,19 @@ type Resources struct {
 	Total            int32 `yaml:"total"`
 }
 
-//Changes in yaml
+// Changes in yaml
 type Changes struct {
 	Total int32 `yaml:"total"`
 }
 
-//Events in yaml
+// Events in yaml
 type Events struct {
 	Failure int32 `yaml:"failure"`
 	Success int32 `yaml:"success"`
 	Total   int32 `yaml:"total"`
 }
 
-//UnmarshallSummary yamlfile
+// UnmarshallSummary yamlfile
 func UnmarshallSummary(yamlInput []byte) (PuppetValues, error) {
 	puppetValues := PuppetValues{}
 
