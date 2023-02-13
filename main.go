@@ -202,19 +202,29 @@ func (v *exporter) Collect(ch chan<- prometheus.Metric) {
 }
 
 // newExporter initialises exporter
-func newExporter(puppetStateDir string) (*exporter, error) {
-	if len(puppetStateDir) < 1 {
-		log.Fatalf("Puppet state dir path is wrong: %v", puppetStateDir)
+func newExporter(puppetDir string) (*exporter, error) {
+	if len(puppetDir) < 1 {
+		log.Fatalf("Puppet state dir path is wrong: %v", puppetDir)
 	}
-	puppetLastRunSummaryPath := path.Join(puppetStateDir, "last_run_summary.yaml")
-	puppetLastRunReportPath := path.Join(puppetStateDir, "last_run_report.yaml")
-	_, err := os.Open(puppetLastRunSummaryPath) // For read access.
+	var puppetLastRunSummaryPath string
+	puppetOldLastRunSummaryPath := path.Join(puppetDir, "cache/state/last_run_summary.yaml")
+	puppetNewLastRunSummaryPath := path.Join(puppetDir, "public/last_run_summary.yaml")
+	_, err := os.Open(puppetOldLastRunSummaryPath) // For read access.
 	if err != nil {
-		log.Fatalf("Unable able to open file %v -- Message from os.Open: %v", puppetLastRunSummaryPath, err)
+		_, err2 := os.Open(puppetNewLastRunSummaryPath) // For read access.
+		if err2 != nil {
+			log.Fatalf("Unable to open file %v -- Message from os.Open: %v\nUnable to open file %v -- Message from os.Open: %v", puppetOldLastRunSummaryPath, err, puppetNewLastRunSummaryPath, err2)
+		} else {
+			puppetLastRunSummaryPath = puppetNewLastRunSummaryPath
+		}
+	} else {
+		puppetLastRunSummaryPath = puppetOldLastRunSummaryPath
 	}
+
+	puppetLastRunReportPath := path.Join(puppetDir, "cache/state/last_run_report.yaml")
 	_, err = os.Open(puppetLastRunReportPath) // For read access.
 	if err != nil {
-		log.Fatalf("Unable able to open file %v -- Message from os.Open: %v", puppetLastRunReportPath, err)
+		log.Fatalf("Unable to open file %v -- Message from os.Open: %v", puppetLastRunReportPath, err)
 	}
 	return &exporter{
 		puppetLastRunSummaryPath: puppetLastRunSummaryPath,
@@ -235,7 +245,7 @@ func main() {
 	// commandline arguments
 	var (
 		metricPath     = flag.String("metrics-path", "/metrics", "URL Endpoint for metrics")
-		puppetStateDir = flag.String("puppetStateDir", "/opt/puppetlabs/puppet/cache/state/", "Path to the puppet state dir")
+		puppetStateDir = flag.String("puppetDir", "/opt/puppetlabs/puppet/", "Path to the puppet dir")
 		showVersion    = flag.Bool("version", false, "Prints version information")
 		listenAddress  = flag.String("listen-address", ":9199", "The address to listen on for HTTP requests.")
 	)
