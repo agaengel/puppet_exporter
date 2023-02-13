@@ -16,6 +16,7 @@ package main
 
 import (
 	"flag"
+	"github.com/agaengel/puppet_exporter/structs"
 	"net/http"
 	"path"
 
@@ -27,8 +28,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
-
-	"github.com/agaengel/puppet_exporter/structs"
 )
 
 const (
