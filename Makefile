@@ -33,23 +33,23 @@ $(BASE): ; $(info $(M) setting GOPATH…)
 
 GOLINT = $(BIN)/golint
 $(BIN)/golint: | $(BASE) ; $(info $(M) building golint…)
-	$Q go get -u golang.org/x/lint/golint
+	$Q go install golang.org/x/lint/golint
 
 GOCOVMERGE = $(BIN)/gocovmerge
 $(BIN)/gocovmerge: | $(BASE) ; $(info $(M) building gocovmerge…)
-	$Q go get github.com/wadey/gocovmerge
+	$Q go install github.com/wadey/gocovmerge
 
 GOCOV = $(BIN)/gocov
 $(BIN)/gocov: | $(BASE) ; $(info $(M) building gocov…)
-	$Q go get github.com/axw/gocov/...
+	$Q go install github.com/axw/gocov/...
 
 GOCOVXML = $(BIN)/gocov-xml
 $(BIN)/gocov-xml: | $(BASE) ; $(info $(M) building gocov-xml…)
-	$Q go get github.com/AlekSi/gocov-xml
+	$Q go install github.com/AlekSi/gocov-xml
 
 GO2XUNIT = $(BIN)/go2xunit
 $(BIN)/go2xunit: | $(BASE) ; $(info $(M) building go2xunit…)
-	$Q go get github.com/tebeka/go2xunit
+	$Q go install github.com/tebeka/go2xunit
 
 # Tests
 
