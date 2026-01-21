@@ -1,7 +1,7 @@
 package structs
 
 import (
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -9,9 +9,9 @@ import (
 type PuppetValues struct {
 	Version   Version            `yaml:"version"`
 	Resources Resources          `yaml:"resources"`
-	Time      map[string]float64 `yaml:time`
-	Changes   Changes            `yaml:changes`
-	Events    Events             `yaml:events`
+	Time      map[string]float64 `yaml:"time"`
+	Changes   Changes            `yaml:"changes"`
+	Events    Events             `yaml:"events"`
 }
 
 // Version in yaml

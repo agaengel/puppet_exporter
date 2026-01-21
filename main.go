@@ -16,18 +16,19 @@ package main
 
 import (
 	"flag"
-	"github.com/agaengel/puppet_exporter/structs"
 	"net/http"
 	"path"
 
+	"github.com/agaengel/puppet_exporter/structs"
+
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/common/log"
-	"github.com/prometheus/common/version"
+	common_version "github.com/prometheus/common/version"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -87,17 +88,25 @@ func (v *exporter) Describe(ch chan<- *prometheus.Desc) {
 func (v *exporter) Collect(ch chan<- prometheus.Metric) {
 
 	// Collect metrics from volume info
-	summaryFile, err := ioutil.ReadFile(v.puppetLastRunSummaryPath)
+	summaryFile, err := os.ReadFile(v.puppetLastRunSummaryPath)
 	if err != nil {
 		log.Infof("yamlFile.Get err   #%v ", err)
 	}
-	reportFile, err := ioutil.ReadFile(v.puppetLastRunReportPath)
+	reportFile, err := os.ReadFile(v.puppetLastRunReportPath)
 	if err != nil {
 		log.Infof("yamlFile.Get err   #%v ", err)
 	}
 
 	puppetValues, err := structs.UnmarshallSummary(summaryFile)
+	if err != nil {
+		log.Errorf("UnmarshallSummary error: %v", err)
+		return
+	}
 	report, err := structs.UnmarshallReport(reportFile)
+	if err != nil {
+		log.Errorf("UnmarshallReport error: %v", err)
+		return
+	}
 
 	ch <- prometheus.MustNewConstMetric(
 		versionConfig,
@@ -208,22 +217,26 @@ func newExporter(puppetDir string) (*exporter, error) {
 	var puppetLastRunSummaryPath string
 	puppetOldLastRunSummaryPath := path.Join(puppetDir, "cache/state/last_run_summary.yaml")
 	puppetNewLastRunSummaryPath := path.Join(puppetDir, "public/last_run_summary.yaml")
-	_, err := os.Open(puppetOldLastRunSummaryPath) // For read access.
+	oldFile, err := os.Open(puppetOldLastRunSummaryPath) // For read access.
 	if err != nil {
-		_, err2 := os.Open(puppetNewLastRunSummaryPath) // For read access.
+		newFile, err2 := os.Open(puppetNewLastRunSummaryPath) // For read access.
 		if err2 != nil {
 			log.Fatalf("Unable to open file %v -- Message from os.Open: %v\nUnable to open file %v -- Message from os.Open: %v", puppetOldLastRunSummaryPath, err, puppetNewLastRunSummaryPath, err2)
 		} else {
 			puppetLastRunSummaryPath = puppetNewLastRunSummaryPath
+			newFile.Close()
 		}
 	} else {
 		puppetLastRunSummaryPath = puppetOldLastRunSummaryPath
+		oldFile.Close()
 	}
 
 	puppetLastRunReportPath := path.Join(puppetDir, "cache/state/last_run_report.yaml")
-	_, err = os.Open(puppetLastRunReportPath) // For read access.
+	reportFile, err := os.Open(puppetLastRunReportPath) // For read access.
 	if err != nil {
 		log.Fatalf("Unable to open file %v -- Message from os.Open: %v", puppetLastRunReportPath, err)
+	} else {
+		reportFile.Close()
 	}
 	return &exporter{
 		puppetLastRunSummaryPath: puppetLastRunSummaryPath,
@@ -236,7 +249,7 @@ func init() {
 }
 
 func versionInfo() {
-	fmt.Println(version.Print("puppet_exporter"))
+	fmt.Println(common_version.Print("puppet_exporter"))
 	os.Exit(0)
 }
 
@@ -260,8 +273,8 @@ func main() {
 	}
 	prometheus.MustRegister(exporter)
 
-	log.Infoln("Puppet Metrics Exporter ", version.Info())
-	log.Infoln("Build context", version.BuildContext())
+	log.Infoln("Puppet Metrics Exporter ", common_version.Info())
+	log.Infoln("Build context", common_version.BuildContext())
 	log.Info("metricPath=", *metricPath)
 
 	http.Handle(*metricPath, promhttp.Handler())
@@ -269,14 +282,16 @@ func main() {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Location", *metricPath)
 			w.WriteHeader(301)
-			w.Write([]byte(`<html>
-			<head><title>Puppet Exporter v` + version.Version + `</title></head>
-			<body>
-			<h1>Puppet Exporter v` + version.Version + `</h1>
-			<p><a href='` + *metricPath + `'>Metrics</a></p>
-			</body>
-			</html>
-		`))
+			if _, err := w.Write([]byte(`<html>
+				<head><title>Puppet Exporter v` + common_version.Version + `</title></head>
+				<body>
+				<h1>Puppet Exporter v` + common_version.Version + `</h1>
+				<p><a href='` + *metricPath + `'>Metrics</a></p>
+				</body>
+				</html>
+			`)); err != nil {
+				log.Errorf("Failed to write response: %v", err)
+			}
 		})
 	}
 	log.Fatal(http.ListenAndServe(*listenAddress, nil))

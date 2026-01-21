@@ -1,9 +1,10 @@
 package structs
 
 import (
-	"github.com/prometheus/common/log"
-	"gopkg.in/yaml.v2"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 )
 
 // Report yaml root
